@@ -1,13 +1,27 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Navigation;
 using System;
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
+using Windows.Foundation.Collections;
+using System.Runtime.InteropServices;
 using Windows.Media.Core;
-using WinRT.Interop; // For WindowNative.GetWindowHandle
+using WinRT.Interop;  // For WindowNative.GetWindowHandle
+
 using Microsoft.UI.Windowing; // For AppWindow and FullScreen API
 using Windows.Graphics.Display; // For screen resolution and full screen
+
+
+// To learn more about WinUI, the WinUI project structure,
+// and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace App2
 {
@@ -29,8 +43,7 @@ namespace App2
             SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~(WS_SYSMENU | WS_CAPTION | WS_THICKFRAME));
 
             // Remove title bar
-            this.ExtendsContentIntoTitleBar = true;
-            this.SetTitleBar(null); // No title bar
+            AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
 
             // Handle window dragging
             this.mediaPlayerElement.PointerPressed += MediaPlayerElement_PointerPressed;
@@ -42,6 +55,22 @@ namespace App2
 
             // Play video automatically and make it fill the window
             mediaPlayerElement.Source = MediaSource.CreateFromUri(new Uri("C:/Users/abarb/Documents/health/news_underground/mediaSorter/media/video/virtual/qj0sopzku6kc1.mp4"));
+            //mediaPlayerElement.Source = MediaSource.CreateFromUri(new Uri("C:/Users/abarb/Downloads/1440p Video Test.mp4"));
+            //mediaPlayerElement.MediaPlayer.MediaOpened += (s, e) =>
+            //{
+            //    // Ensure we're on the UI thread before accessing the UI components
+            //    mediaPlayerElement.DispatcherQueue.TryEnqueue(() =>
+            //    {
+            //        // Get video resolution from the PlaybackSession
+            //        var mediaPlayer = mediaPlayerElement.MediaPlayer;
+            //        var naturalVideoWidth = mediaPlayer.PlaybackSession.NaturalVideoWidth;
+            //        var naturalVideoHeight = mediaPlayer.PlaybackSession.NaturalVideoHeight;
+
+            //        // Optionally, you can log this information or display it to the user
+            //        System.Diagnostics.Debug.WriteLine($"Video loaded with resolution: {naturalVideoWidth}x{naturalVideoHeight}");
+            //    });
+            //};
+
             mediaPlayerElement.MediaPlayer.Play();
 
             // Initialize AppWindow for full screen control
@@ -87,7 +116,14 @@ namespace App2
         {
             if (!isFullScreen)
             {
-                // Enter full-screen mode
+                // Get the screen resolution from the primary display
+                var primaryDisplay = DisplayArea.GetFromWindowId(appWindow.Id, DisplayAreaFallback.Primary);
+                var screenWidth = (int)primaryDisplay.WorkArea.Width;
+                var screenHeight = (int)primaryDisplay.WorkArea.Height;
+
+                // Move and resize the window to fill the screen
+                Win32Interop.MoveWindow(WindowNative.GetWindowHandle(this), 0, 0, screenWidth, screenHeight, true);
+
                 appWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
             }
             else
@@ -95,14 +131,30 @@ namespace App2
                 // Exit full-screen mode
                 appWindow.SetPresenter(AppWindowPresenterKind.Default);
             }
+
             isFullScreen = !isFullScreen;
         }
+
+        //private void ToggleFullScreenMode()
+        //{
+        //    if (!isFullScreen)
+        //    {
+        //        // Enter full-screen mode
+        //        appWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
+        //    }
+        //    else
+        //    {
+        //        // Exit full-screen mode
+        //        appWindow.SetPresenter(AppWindowPresenterKind.Default);
+        //    }
+        //    isFullScreen = !isFullScreen;
+        //}
 
         // Utility to get the AppWindow object for managing window properties
         private AppWindow GetAppWindowForCurrentWindow()
         {
             var windowHandle = WindowNative.GetWindowHandle(this);
-            var windowId = Win32Interop.GetWindowIdFromWindow(windowHandle);
+            var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(windowHandle);
             return AppWindow.GetFromWindowId(windowId);
         }
 
