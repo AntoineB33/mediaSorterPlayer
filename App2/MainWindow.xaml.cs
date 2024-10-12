@@ -19,6 +19,7 @@ using WinRT.Interop;  // For WindowNative.GetWindowHandle
 using Microsoft.UI.Windowing; // For AppWindow and FullScreen API
 using Windows.Graphics.Display; // For screen resolution and full screen
 
+using System.Diagnostics;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -53,23 +54,16 @@ namespace App2
             // Handle double click
             this.mediaPlayerElement.DoubleTapped += MediaPlayerElement_DoubleTapped;
 
+            // Add KeyDown event handler for MainGrid
+            MainGrid.KeyDown += MainGrid_KeyDown;
+            MainGrid.Focus(FocusState.Programmatic); // Set focus to the Grid to ensure it receives key events
+
+            // Assuming mediaPlayerElement is your MediaPlayerElement instance
+            mediaPlayerElement.MediaPlayer.RealTimePlayback = true;
+
             // Play video automatically and make it fill the window
             mediaPlayerElement.Source = MediaSource.CreateFromUri(new Uri("C:/Users/abarb/Documents/health/news_underground/mediaSorter/media/video/virtual/qj0sopzku6kc1.mp4"));
-            //mediaPlayerElement.Source = MediaSource.CreateFromUri(new Uri("C:/Users/abarb/Downloads/1440p Video Test.mp4"));
-            //mediaPlayerElement.MediaPlayer.MediaOpened += (s, e) =>
-            //{
-            //    // Ensure we're on the UI thread before accessing the UI components
-            //    mediaPlayerElement.DispatcherQueue.TryEnqueue(() =>
-            //    {
-            //        // Get video resolution from the PlaybackSession
-            //        var mediaPlayer = mediaPlayerElement.MediaPlayer;
-            //        var naturalVideoWidth = mediaPlayer.PlaybackSession.NaturalVideoWidth;
-            //        var naturalVideoHeight = mediaPlayer.PlaybackSession.NaturalVideoHeight;
-
-            //        // Optionally, you can log this information or display it to the user
-            //        System.Diagnostics.Debug.WriteLine($"Video loaded with resolution: {naturalVideoWidth}x{naturalVideoHeight}");
-            //    });
-            //};
+            
 
             mediaPlayerElement.MediaPlayer.Play();
 
@@ -111,6 +105,48 @@ namespace App2
             ToggleFullScreenMode();
         }
 
+        private void MainGrid_KeyDown(object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key == Windows.System.VirtualKey.Escape)
+            {
+                Application.Current.Exit();
+            }
+            else if (e.Key == Windows.System.VirtualKey.Space)
+            {
+                // Toggle pause/play on the media player
+                if (mediaPlayerElement.MediaPlayer.PlaybackSession.PlaybackState == Windows.Media.Playback.MediaPlaybackState.Playing)
+                {
+                    mediaPlayerElement.MediaPlayer.Pause();
+                }
+                else
+                {
+                    mediaPlayerElement.MediaPlayer.Play();
+                }
+            }
+            else if (e.Key == Windows.System.VirtualKey.Left)
+            {
+                // Rewind the video by 5 seconds
+                var session = mediaPlayerElement.MediaPlayer.PlaybackSession;
+                session.Position = session.Position - TimeSpan.FromSeconds(5) < TimeSpan.Zero
+                    ? TimeSpan.Zero
+                    : session.Position - TimeSpan.FromSeconds(5);
+            }
+            else if (e.Key == Windows.System.VirtualKey.Right)
+            {
+                // Advance the video by 5 seconds
+                var session = mediaPlayerElement.MediaPlayer.PlaybackSession;
+                var newPosition = session.Position + TimeSpan.FromSeconds(5);
+                var duration = session.NaturalDuration;
+
+                session.Position = newPosition > duration
+                    ? duration
+                    : newPosition;
+            }
+        }
+
+
+
+
         // Toggle between full screen and windowed mode
         private void ToggleFullScreenMode()
         {
@@ -149,6 +185,7 @@ namespace App2
         //    }
         //    isFullScreen = !isFullScreen;
         //}
+
 
         // Utility to get the AppWindow object for managing window properties
         private AppWindow GetAppWindowForCurrentWindow()
