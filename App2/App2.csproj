@@ -22,7 +22,7 @@
 	<GenerateTestArtifacts>True</GenerateTestArtifacts>
 	<AppxBundle>Never</AppxBundle>
 	<AppInstallerUri>file:///C:/Users/abarb/source/repos/App2/App2/bin/x64/Release/net8.0-windows10.0.26100.0/win-x64/AppPackages</AppInstallerUri>
-	<HoursBetweenUpdateChecks>168000</HoursBetweenUpdateChecks>
+	<HoursBetweenUpdateChecks>672</HoursBetweenUpdateChecks>
   </PropertyGroup>
 
   <ItemGroup>

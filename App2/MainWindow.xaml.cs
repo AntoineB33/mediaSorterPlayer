@@ -20,6 +20,12 @@ using Microsoft.UI.Windowing; // For AppWindow and FullScreen API
 using Windows.Graphics.Display; // For screen resolution and full screen
 
 using System.Diagnostics;
+using Windows.Media.Playback;
+using Windows.System.Display;
+using System.Threading.Tasks;
+
+using Microsoft.UI.Dispatching; // Add this line
+
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -35,9 +41,16 @@ namespace App2
         private Windows.Foundation.Point lastPointerPosition;
         private AppWindow appWindow; // Used for full-screen management
 
+        private DisplayRequest appDisplayRequest = null; // Declare here
+        private DispatcherQueue dispatcherQueue;
         public MainWindow()
         {
             this.InitializeComponent();
+            //mediaPlayerElement.MediaPlayer.PlaybackSession.BufferingStarted += MediaPlaybackSession_BufferingStarted;
+            //mediaPlayerElement.MediaPlayer.PlaybackSession.BufferingEnded += MediaPlaybackSession_BufferingEnded;
+            //mediaPlayerElement.MediaPlayer.PlaybackSession.PlaybackStateChanged += PlaybackSession_PlaybackStateChanged;
+
+            dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
             // Make window borderless (removing close, minimize, maximize buttons, and title bar)
             var hwnd = WindowNative.GetWindowHandle(this);
@@ -62,7 +75,7 @@ namespace App2
             mediaPlayerElement.MediaPlayer.RealTimePlayback = true;
 
             // Play video automatically and make it fill the window
-            mediaPlayerElement.Source = MediaSource.CreateFromUri(new Uri("C:/Users/abarb/Documents/health/news_underground/mediaSorter/media/video/virtual/qj0sopzku6kc1.mp4"));
+            mediaPlayerElement.Source = MediaSource.CreateFromUri(new Uri("C:/Users/abarb/Documents/health/news_underground/mediaSorter/media/video/virtual/i-m-just-here-for-vacation-white-aphy3d-4k_1080p.mp4"));
             
 
             mediaPlayerElement.MediaPlayer.Play();
@@ -70,6 +83,33 @@ namespace App2
             // Initialize AppWindow for full screen control
             appWindow = GetAppWindowForCurrentWindow();
         }
+
+
+
+        private void PlaybackSession_PlaybackStateChanged(MediaPlaybackSession sender, object args)
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (sender.PlaybackState == MediaPlaybackState.Playing)
+                {
+                    if (appDisplayRequest == null)
+                    {
+                        appDisplayRequest = new DisplayRequest();
+                        appDisplayRequest.RequestActive();
+                    }
+                }
+                else
+                {
+                    if (appDisplayRequest != null)
+                    {
+                        appDisplayRequest.RequestRelease();
+                        appDisplayRequest = null;
+                    }
+                }
+            });
+        }
+
+
 
         // Handle PointerPressed (start dragging)
         private void MediaPlayerElement_PointerPressed(object sender, PointerRoutedEventArgs e)
@@ -107,6 +147,9 @@ namespace App2
 
         private void MainGrid_KeyDown(object sender, KeyRoutedEventArgs e)
         {
+            // Handle the key input with a slight delay to prevent rapid state changes
+            //await Task.Delay(100); // Adjust the delay as needed
+
             if (e.Key == Windows.System.VirtualKey.Escape)
             {
                 Application.Current.Exit();
@@ -144,22 +187,11 @@ namespace App2
             }
         }
 
-
-
-
-        // Toggle between full screen and windowed mode
         private void ToggleFullScreenMode()
         {
             if (!isFullScreen)
             {
-                // Get the screen resolution from the primary display
-                var primaryDisplay = DisplayArea.GetFromWindowId(appWindow.Id, DisplayAreaFallback.Primary);
-                var screenWidth = (int)primaryDisplay.WorkArea.Width;
-                var screenHeight = (int)primaryDisplay.WorkArea.Height;
-
-                // Move and resize the window to fill the screen
-                Win32Interop.MoveWindow(WindowNative.GetWindowHandle(this), 0, 0, screenWidth, screenHeight, true);
-
+                // Enter full-screen mode
                 appWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
             }
             else
@@ -167,24 +199,8 @@ namespace App2
                 // Exit full-screen mode
                 appWindow.SetPresenter(AppWindowPresenterKind.Default);
             }
-
             isFullScreen = !isFullScreen;
         }
-
-        //private void ToggleFullScreenMode()
-        //{
-        //    if (!isFullScreen)
-        //    {
-        //        // Enter full-screen mode
-        //        appWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
-        //    }
-        //    else
-        //    {
-        //        // Exit full-screen mode
-        //        appWindow.SetPresenter(AppWindowPresenterKind.Default);
-        //    }
-        //    isFullScreen = !isFullScreen;
-        //}
 
 
         // Utility to get the AppWindow object for managing window properties
