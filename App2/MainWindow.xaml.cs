@@ -34,6 +34,8 @@ namespace App2
 {
     public sealed partial class MainWindow : Window
     {
+        private int vidInd = 0;
+
         private bool isDragging = false;
         private bool isFullScreen = false;
         private DateTime lastClickTime = DateTime.MinValue;
@@ -83,6 +85,21 @@ namespace App2
             // Initialize AppWindow for full screen control
             appWindow = GetAppWindowForCurrentWindow();
         }
+
+
+        public void ProcessArguments(string[] args)
+        {
+            string mediaClass = "";
+            if (args.Length >= 3)
+            {
+                mediaClass = args[1];
+                if (int.TryParse(args[2], out int intArg))
+                {
+                    vidInd = intArg;
+                }
+            }
+        }
+
 
 
 
