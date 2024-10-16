@@ -41,16 +41,12 @@ namespace App2
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-            m_window = new MainWindow();
 
             // Get command-line arguments
             string[] cmdArgs = Environment.GetCommandLineArgs();
 
-            // Cast m_window to MainWindow so that ProcessArguments can be called
-            if (m_window is MainWindow mainWindow)
-            {
-                mainWindow.ProcessArguments(cmdArgs);
-            }
+            m_window = new MainWindow(cmdArgs);
+
             m_window.Activate();
         }
 

@@ -34,7 +34,8 @@ namespace App2
 {
     public sealed partial class MainWindow : Window
     {
-        private int vidInd = 0;
+        private int currentVideoIndex; // Current video index in the list
+        List<string> orderedVideos = new List<string>();
 
         private bool isDragging = false;
         private bool isFullScreen = false;
@@ -45,8 +46,50 @@ namespace App2
 
         private DisplayRequest appDisplayRequest = null; // Declare here
         private DispatcherQueue dispatcherQueue;
-        public MainWindow()
+        public MainWindow(string[] args)
         {
+            string mediaClass = "";
+            if (args.Length >= 3)
+            {
+                mediaClass = args[1];
+                if (int.TryParse(args[2], out int intArg))
+                {
+                    currentVideoIndex = intArg;
+                }
+            }
+
+            // File paths
+            mediaClass = "C:/Users/abarb/Documents/health/news_underground/mediaSorter/programs/data/" + mediaClass; // Path to the data folder
+            string videoPathsFile = mediaClass + "_videos.txt";  // File with relative paths to videos
+            string orderFile = mediaClass + "_order.txt";            // File with line of integers (order) separated by ';'
+
+            // Read video paths
+            List<string> videoPaths = new List<string>(File.ReadAllLines(videoPathsFile));
+
+            // Read the order lines and convert them to integers
+            List<int> order = new List<int>();
+
+            foreach (var line in File.ReadAllLines(orderFile))
+            {
+                if (int.TryParse(line, out int index))
+                {
+                    order.Add(index); // Subtract 1 since arrays are 0-indexed in C#
+                }
+            }
+
+            foreach (var index in order)
+            {
+                if (index >= 0 && index < videoPaths.Count)
+                {
+                    orderedVideos.Add(videoPaths[index]);
+                }
+                else
+                {
+                    Console.WriteLine($"Warning: Index {index + 1} is out of bounds.");
+                }
+            }
+
+
             this.InitializeComponent();
             //mediaPlayerElement.MediaPlayer.PlaybackSession.BufferingStarted += MediaPlaybackSession_BufferingStarted;
             //mediaPlayerElement.MediaPlayer.PlaybackSession.BufferingEnded += MediaPlaybackSession_BufferingEnded;
@@ -75,28 +118,41 @@ namespace App2
 
             // Assuming mediaPlayerElement is your MediaPlayerElement instance
             mediaPlayerElement.MediaPlayer.RealTimePlayback = true;
-
-            // Play video automatically and make it fill the window
-            mediaPlayerElement.Source = MediaSource.CreateFromUri(new Uri("C:/Users/abarb/Documents/health/news_underground/mediaSorter/media/video/virtual/i-m-just-here-for-vacation-white-aphy3d-4k_1080p.mp4"));
             
+            // Subscribe to MediaEnded event
+            mediaPlayerElement.MediaPlayer.MediaEnded += MediaPlayer_MediaEnded;
 
-            mediaPlayerElement.MediaPlayer.Play();
+            PlayNextVideo();
+
 
             // Initialize AppWindow for full screen control
             appWindow = GetAppWindowForCurrentWindow();
         }
 
-
-        public void ProcessArguments(string[] args)
+        // Method to handle video completion and play next video
+        private void MediaPlayer_MediaEnded(MediaPlayer sender, object args)
         {
-            string mediaClass = "";
-            if (args.Length >= 3)
+            PlayNextVideo();
+        }
+
+        private void PlayNextVideo()
+        {
+            if (currentVideoIndex < orderedVideos.Count)
             {
-                mediaClass = args[1];
-                if (int.TryParse(args[2], out int intArg))
+                string nextVideoPath = orderedVideos[currentVideoIndex];
+                Uri videoUri = new Uri("C:/Users/abarb/Documents/health/news_underground/mediaSorter/media/" + nextVideoPath + ".mp4");
+
+                // Ensure the operation is run on the UI thread
+                dispatcherQueue.TryEnqueue(() =>
                 {
-                    vidInd = intArg;
-                }
+                    mediaPlayerElement.Source = MediaSource.CreateFromUri(videoUri);
+                    mediaPlayerElement.MediaPlayer.Play();
+                });
+                currentVideoIndex++;
+            }
+            else
+            {
+                Console.WriteLine("End of video playlist.");
             }
         }
 
