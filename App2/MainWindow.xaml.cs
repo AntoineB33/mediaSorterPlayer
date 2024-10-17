@@ -258,6 +258,36 @@ namespace App2
                     ? duration
                     : newPosition;
             }
+            else if (e.Key >= Windows.System.VirtualKey.Number0 && e.Key <= Windows.System.VirtualKey.Number9)
+            {
+                // Move to a percentage of the video based on the number key pressed
+                int keyNumber = (int)e.Key - (int)Windows.System.VirtualKey.Number0; // Convert the VirtualKey to the number
+
+                // Get the session and duration of the current video
+                var session = mediaPlayerElement.MediaPlayer.PlaybackSession;
+                var duration = session.NaturalDuration;
+
+                if (duration != TimeSpan.Zero)
+                {
+                    // Calculate the target position based on the key pressed (0-9 = 0% to 90% of the video)
+                    TimeSpan targetPosition = TimeSpan.FromSeconds(duration.TotalSeconds * (keyNumber / 10.0));
+
+                    // Set the media player position
+                    session.Position = targetPosition;
+                }
+            }
+            // Control audio volume using numeric keypad (0-9)
+            else if (e.Key >= Windows.System.VirtualKey.NumberPad0 && e.Key <= Windows.System.VirtualKey.NumberPad9)
+            {
+                // Convert the VirtualKey for the numeric keypad to a number (0-9)
+                int keyNumber = (int)e.Key - (int)Windows.System.VirtualKey.NumberPad0;
+
+                // Calculate the volume based on the key pressed (0 = 0% / mute, 9 = 100%)
+                double volume = keyNumber / 9.0; // Convert the key press to a percentage of volume
+
+                // Set the media player volume
+                mediaPlayerElement.MediaPlayer.Volume = volume;
+            }
         }
 
         private void ToggleFullScreenMode()
